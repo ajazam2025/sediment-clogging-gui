@@ -204,7 +204,7 @@ st.markdown(
     """
     <div class="footer">
     Developed by Dr. Mudasir Nazeer, Assistant Professor, National Institute of Technology Srianagar
-• Sediment-induced clogging assessment
+• GUI for Sediment-induced clogging assessment
     </div>
     """,
     unsafe_allow_html=True
