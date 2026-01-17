@@ -87,7 +87,7 @@ st.markdown(
 st.markdown(
     """
     <div class="header">
-        <h1>🌊 Sediment Clogging Predictor</h1>
+        <h1>🌊 GUI Tool for  Clogging Prediction in Pervious Concrete </h1>
         <p>Machine learning–based prediction of clogging index & state</p>
     </div>
     """,
