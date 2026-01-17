@@ -9,50 +9,72 @@ from sklearn.svm import SVR
 from xgboost import XGBRegressor
 
 # --------------------------------------------------
-# Page configuration
+# Page config
 # --------------------------------------------------
 st.set_page_config(
-    page_title="Sediment Clogging Prediction",
+    page_title="Sediment Clogging Predictor",
     page_icon="🌊",
     layout="centered"
 )
 
 # --------------------------------------------------
-# Custom CSS (colors & cards)
+# Custom CSS (compact, colorful, one-screen)
 # --------------------------------------------------
 st.markdown(
     """
     <style>
-    .main {
-        background-color: #f7f9fc;
-    }
-    .header-box {
-        background: linear-gradient(90deg, #1f77b4, #17becf);
-        padding: 25px;
-        border-radius: 12px;
-        color: white;
-        text-align: center;
-    }
-    .card {
-        background-color: white;
+    .main { background-color: #f4f7fb; }
+
+    .header {
+        background: linear-gradient(90deg, #0f2027, #203a43, #2c5364);
         padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0px 4px 10px rgba(0,0,0,0.08);
-        margin-bottom: 20px;
+        border-radius: 14px;
+        text-align: center;
+        color: white;
+        margin-bottom: 15px;
+    }
+
+    .header h1 { font-size: 32px; margin-bottom: 5px; }
+    .header p { font-size: 15px; opacity: 0.9; }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin-top: 10px;
+        margin-bottom: 5px;
+        color: #203a43;
+    }
+
+    .card {
+        background: white;
+        border-radius: 14px;
+        padding: 14px;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.08);
         text-align: center;
     }
-    .model-name {
-        font-size: 18px;
-        font-weight: bold;
-        color: #1f77b4;
+
+    .model {
+        font-size: 15px;
+        font-weight: 600;
+        color: #2c5364;
     }
-    .index-value {
+
+    .value {
         font-size: 26px;
         font-weight: bold;
+        color: #0f2027;
     }
+
     .state {
-        font-size: 16px;
-        color: grey;
+        font-size: 14px;
+        color: #666;
+    }
+
+    .footer {
+        text-align: center;
+        font-size: 12px;
+        color: #888;
+        margin-top: 10px;
     }
     </style>
     """,
@@ -64,15 +86,13 @@ st.markdown(
 # --------------------------------------------------
 st.markdown(
     """
-    <div class="header-box">
-        <h1>🌊 Sediment-Induced Clogging Prediction</h1>
-        <h4>Machine Learning–based estimation of clogging index and state</h4>
+    <div class="header">
+        <h1>🌊 Sediment Clogging Predictor</h1>
+        <p>Machine learning–based prediction of clogging index & state</p>
     </div>
     """,
     unsafe_allow_html=True
 )
-
-st.write("")
 
 # --------------------------------------------------
 # Load data
@@ -84,7 +104,6 @@ def load_data():
 df = load_data()
 
 TARGET = "Clogging_Index_0_to_1"
-
 X = df.drop(columns=[TARGET, "Clogging_State"], errors="ignore")
 y = df[TARGET]
 
@@ -98,15 +117,15 @@ X_train, _, y_train, _ = train_test_split(
 @st.cache_resource
 def train_models():
     models = {
-        "Linear Regression": Pipeline([
+        "LR ⚖️": Pipeline([
             ("scaler", StandardScaler()),
             ("model", LinearRegression())
         ]),
-        "SVR": Pipeline([
+        "SVR 🧠": Pipeline([
             ("scaler", StandardScaler()),
             ("model", SVR(C=100, gamma=0.1))
         ]),
-        "XGBoost": Pipeline([
+        "XGB 🚀": Pipeline([
             ("scaler", StandardScaler()),
             ("model", XGBRegressor(
                 n_estimators=300,
@@ -115,7 +134,7 @@ def train_models():
                 random_state=42
             ))
         ]),
-        "Bayesian Model Averaging": Pipeline([
+        "BMA 📊": Pipeline([
             ("scaler", StandardScaler()),
             ("model", BayesianRidge())
         ])
@@ -130,64 +149,62 @@ def train_models():
 models = train_models()
 
 # --------------------------------------------------
-# Input section
+# Input section (2-column compact)
 # --------------------------------------------------
-st.markdown("### 🔧 Input Parameters")
+st.markdown("<div class='section-title'>🔧 Input Parameters</div>", unsafe_allow_html=True)
 
+cols = st.columns(2)
 input_data = {}
-for col in X.columns:
-    input_data[col] = st.number_input(
+
+for i, col in enumerate(X.columns):
+    input_data[col] = cols[i % 2].number_input(
         col,
         value=float(X[col].mean())
     )
 
 input_df = pd.DataFrame([input_data])
 
-st.write("")
-
 # --------------------------------------------------
 # Prediction
 # --------------------------------------------------
 def clogging_state(index):
     if index < 0.33:
-        return "Low Clogging"
+        return "🟢 Low"
     elif index < 0.66:
-        return "Moderate Clogging"
+        return "🟡 Moderate"
     else:
-        return "Severe Clogging"
+        return "🔴 Severe"
 
 
 if st.button("🚀 Predict Clogging", use_container_width=True):
 
-    st.write("")
-    st.markdown("### 🔍 Predicted Clogging Index & State")
+    st.markdown("<div class='section-title'>📊 Prediction Results</div>", unsafe_allow_html=True)
 
-    for name, model in models.items():
+    result_cols = st.columns(4)
+
+    for i, (name, model) in enumerate(models.items()):
         index = model.predict(input_df)[0]
         state = clogging_state(index)
 
-        st.markdown(
+        result_cols[i].markdown(
             f"""
             <div class="card">
-                <div class="model-name">{name}</div>
-                <div class="index-value">{index:.3f}</div>
+                <div class="model">{name}</div>
+                <div class="value">{index:.3f}</div>
                 <div class="state">{state}</div>
             </div>
             """,
             unsafe_allow_html=True
         )
 
-    st.success("✅ Prediction completed successfully")
-
 # --------------------------------------------------
 # Footer
 # --------------------------------------------------
 st.markdown(
     """
-    <hr>
-    <p style='text-align: center; color: grey;'>
-    ML-based sediment clogging prediction • Research & academic use
-    </p>
+    <div class="footer">
+    Research-grade ML tool • Sediment-induced clogging assessment
+    </div>
     """,
     unsafe_allow_html=True
 )
