@@ -203,7 +203,8 @@ if st.button("🚀 Predict Clogging", use_container_width=True):
 st.markdown(
     """
     <div class="footer">
-    Research-grade ML tool • Sediment-induced clogging assessment
+    Developed by Dr. Mudasir Nazeer, Assistant Professor, National Institute of Technology Srianagar
+• Sediment-induced clogging assessment
     </div>
     """,
     unsafe_allow_html=True
