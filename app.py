@@ -7,7 +7,6 @@ from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LinearRegression, BayesianRidge
 from sklearn.svm import SVR
 from xgboost import XGBRegressor
-from sklearn.metrics import r2_score
 
 # --------------------------------------------------
 # Page configuration
@@ -25,7 +24,7 @@ st.markdown(
     """
     <h1 style='text-align: center;'>🌊 Sediment-Induced Clogging Prediction</h1>
     <h3 style='text-align: center; color: grey;'>
-    Machine Learning based assessment of clogging index and state
+    Machine Learning based prediction of clogging index and state
     </h3>
     <hr>
     """,
@@ -46,12 +45,13 @@ TARGET = "Clogging_Index_0_to_1"
 X = df.drop(columns=[TARGET, "Clogging_State"], errors="ignore")
 y = df[TARGET]
 
-X_train, X_test, y_train, y_test = train_test_split(
+# Train–test split (internal, not shown)
+X_train, _, y_train, _ = train_test_split(
     X, y, test_size=0.2, random_state=42
 )
 
 # --------------------------------------------------
-# Train models
+# Train models (cached)
 # --------------------------------------------------
 @st.cache_resource
 def train_models():
@@ -79,85 +79,64 @@ def train_models():
         ])
     }
 
-    r2_scores = {}
-
-    for name, model in models.items():
+    for model in models.values():
         model.fit(X_train, y_train)
-        r2_scores[name] = r2_score(y_test, model.predict(X_test))
 
-    return models, r2_scores
+    return models
 
 
-with st.spinner("🔄 Training ML models..."):
-    models, r2_scores = train_models()
+with st.spinner("🔄 Initializing machine learning models..."):
+    models = train_models()
 
-# --------------------------------------------------
-# Tabs
-# --------------------------------------------------
-tab1, tab2 = st.tabs(["📊 Model Performance", "🔮 Prediction"])
+st.success("✅ Models ready for prediction")
 
 # --------------------------------------------------
-# Tab 1: Performance
+# Prediction tab
 # --------------------------------------------------
-with tab1:
-    st.subheader("📈 Model Performance (R² Score)")
+st.subheader("🔧 Input Parameters")
 
-    r2_df = pd.DataFrame.from_dict(
-        r2_scores, orient="index", columns=["R² Score"]
-    ).sort_values(by="R² Score", ascending=False)
+with st.sidebar:
+    st.markdown("### 🔧 Input Parameters")
+    input_data = {}
 
-    st.dataframe(
-        r2_df.style.format("{:.3f}").background_gradient(cmap="Blues"),
-        use_container_width=True
-    )
+    for col in X.columns:
+        input_data[col] = st.number_input(
+            col,
+            value=float(X[col].mean())
+        )
 
-    best_model = r2_df.index[0]
-    st.success(f"🏆 Best performing model: **{best_model}**")
+    predict_btn = st.button("🚀 Predict Clogging")
+
+input_df = pd.DataFrame([input_data])
 
 # --------------------------------------------------
-# Tab 2: Prediction
+# Prediction logic
 # --------------------------------------------------
-with tab2:
-    st.subheader("🔧 Input Parameters")
+def clogging_state(index):
+    if index < 0.33:
+        return "Low Clogging"
+    elif index < 0.66:
+        return "Moderate Clogging"
+    else:
+        return "Severe Clogging"
 
-    with st.sidebar:
-        st.markdown("### 🔧 Input Parameters")
-        input_data = {}
 
-        for col in X.columns:
-            input_data[col] = st.number_input(
-                col,
-                value=float(X[col].mean())
-            )
+if predict_btn:
+    st.subheader("🔍 Predicted Clogging Index & State")
 
-        predict_btn = st.button("🚀 Predict Clogging")
+    cols = st.columns(len(models))
 
-    input_df = pd.DataFrame([input_data])
+    for i, (name, model) in enumerate(models.items()):
+        index = model.predict(input_df)[0]
+        state = clogging_state(index)
 
-    if predict_btn:
-        st.subheader("🔍 Predicted Results")
+        cols[i].metric(
+            label=name,
+            value=f"{index:.3f}",
+            delta=state
+        )
 
-        cols = st.columns(len(models))
-
-        def clogging_state(index):
-            if index < 0.33:
-                return "Low Clogging"
-            elif index < 0.66:
-                return "Moderate Clogging"
-            else:
-                return "Severe Clogging"
-
-        for i, (name, model) in enumerate(models.items()):
-            index = model.predict(input_df)[0]
-            state = clogging_state(index)
-
-            cols[i].metric(
-                label=name,
-                value=f"{index:.3f}",
-                delta=state
-            )
-
-        st.success("✅ Prediction completed successfully")
+    st.success("✅ Prediction completed successfully")
 
 # --------------------------------------------------
 # Footer
@@ -166,7 +145,7 @@ st.markdown(
     """
     <hr>
     <p style='text-align: center; color: grey;'>
-    ML-based prediction of sediment-induced clogging • Research & academic use
+    ML-based sediment clogging prediction • Research & academic use
     </p>
     """,
     unsafe_allow_html=True
