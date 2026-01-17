@@ -14,7 +14,49 @@ from xgboost import XGBRegressor
 st.set_page_config(
     page_title="Sediment Clogging Prediction",
     page_icon="🌊",
-    layout="wide"
+    layout="centered"
+)
+
+# --------------------------------------------------
+# Custom CSS (colors & cards)
+# --------------------------------------------------
+st.markdown(
+    """
+    <style>
+    .main {
+        background-color: #f7f9fc;
+    }
+    .header-box {
+        background: linear-gradient(90deg, #1f77b4, #17becf);
+        padding: 25px;
+        border-radius: 12px;
+        color: white;
+        text-align: center;
+    }
+    .card {
+        background-color: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    .model-name {
+        font-size: 18px;
+        font-weight: bold;
+        color: #1f77b4;
+    }
+    .index-value {
+        font-size: 26px;
+        font-weight: bold;
+    }
+    .state {
+        font-size: 16px;
+        color: grey;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
 )
 
 # --------------------------------------------------
@@ -22,14 +64,15 @@ st.set_page_config(
 # --------------------------------------------------
 st.markdown(
     """
-    <h1 style='text-align: center;'>🌊 Sediment-Induced Clogging Prediction</h1>
-    <h3 style='text-align: center; color: grey;'>
-    Machine Learning based prediction of clogging index and state
-    </h3>
-    <hr>
+    <div class="header-box">
+        <h1>🌊 Sediment-Induced Clogging Prediction</h1>
+        <h4>Machine Learning–based estimation of clogging index and state</h4>
+    </div>
     """,
     unsafe_allow_html=True
 )
+
+st.write("")
 
 # --------------------------------------------------
 # Load data
@@ -45,13 +88,12 @@ TARGET = "Clogging_Index_0_to_1"
 X = df.drop(columns=[TARGET, "Clogging_State"], errors="ignore")
 y = df[TARGET]
 
-# Train–test split (internal, not shown)
 X_train, _, y_train, _ = train_test_split(
     X, y, test_size=0.2, random_state=42
 )
 
 # --------------------------------------------------
-# Train models (cached)
+# Train models
 # --------------------------------------------------
 @st.cache_resource
 def train_models():
@@ -85,32 +127,26 @@ def train_models():
     return models
 
 
-with st.spinner("🔄 Initializing machine learning models..."):
-    models = train_models()
-
-st.success("✅ Models ready for prediction")
+models = train_models()
 
 # --------------------------------------------------
-# Prediction tab
+# Input section
 # --------------------------------------------------
-st.subheader("🔧 Input Parameters")
+st.markdown("### 🔧 Input Parameters")
 
-with st.sidebar:
-    st.markdown("### 🔧 Input Parameters")
-    input_data = {}
-
-    for col in X.columns:
-        input_data[col] = st.number_input(
-            col,
-            value=float(X[col].mean())
-        )
-
-    predict_btn = st.button("🚀 Predict Clogging")
+input_data = {}
+for col in X.columns:
+    input_data[col] = st.number_input(
+        col,
+        value=float(X[col].mean())
+    )
 
 input_df = pd.DataFrame([input_data])
 
+st.write("")
+
 # --------------------------------------------------
-# Prediction logic
+# Prediction
 # --------------------------------------------------
 def clogging_state(index):
     if index < 0.33:
@@ -121,19 +157,24 @@ def clogging_state(index):
         return "Severe Clogging"
 
 
-if predict_btn:
-    st.subheader("🔍 Predicted Clogging Index & State")
+if st.button("🚀 Predict Clogging", use_container_width=True):
 
-    cols = st.columns(len(models))
+    st.write("")
+    st.markdown("### 🔍 Predicted Clogging Index & State")
 
-    for i, (name, model) in enumerate(models.items()):
+    for name, model in models.items():
         index = model.predict(input_df)[0]
         state = clogging_state(index)
 
-        cols[i].metric(
-            label=name,
-            value=f"{index:.3f}",
-            delta=state
+        st.markdown(
+            f"""
+            <div class="card">
+                <div class="model-name">{name}</div>
+                <div class="index-value">{index:.3f}</div>
+                <div class="state">{state}</div>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
 
     st.success("✅ Prediction completed successfully")
