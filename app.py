@@ -12,7 +12,7 @@ from xgboost import XGBRegressor
 # Page config
 # --------------------------------------------------
 st.set_page_config(
-    page_title="GUI Tool for Sediment Clogging Prediction",
+    page_title="GUI Tool for  Clogging Prediction in Pervious Concrete",
     page_icon="🌊",
     layout="centered"
 )
